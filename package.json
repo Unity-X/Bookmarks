@@ -1,0 +1,15 @@
+{
+  "name": "com.unity-x.bookmarks",
+  "displayName": "Bookmarks",
+  "version": "0.1.0",
+  "unity": "2019.3",
+  "description": "An editor tool that allows you to bookmark assets.",
+  "keywords": [
+    "unity",
+    "X",
+    "Bookmarks"
+  ],
+  "dependencies": {
+  },
+  "type": "library"
+}
