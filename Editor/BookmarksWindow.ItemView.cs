@@ -11,7 +11,7 @@ namespace UnityX.Bookmarks
 {
     public partial class BookmarksWindow
     {
-        private class ItemView : VisualElement
+        internal class ItemView : VisualElement
         {
             private BookmarksWindowLocalState.Item _itemData;
             private readonly Resources _resources;
@@ -178,37 +178,41 @@ namespace UnityX.Bookmarks
 
             public void UpdateViewFromItemData()
             {
-                if (_itemData.Type == BookmarksWindowLocalState.Item.ObjectType.SceneObject)
-                {
-                    if (_itemData.CachedSceneAssetReference == null)
-                    {
-                        _label.text = $"Missing ({_itemData.LatestSceneName} > {_itemData.LatestObjectName})";
-                    }
-                    else if (_itemData.CachedObjectReference == null)
-                    {
-                        _label.text = $"{_itemData.CachedSceneAssetReference.name} > {_itemData.LatestObjectName}";
-                    }
-                    else
-                    {
-                        _label.text = $"{_itemData.CachedSceneAssetReference.name} > {_itemData.CachedObjectReference.name}";
-                    }
-                }
-                else
-                {
-                    if (_itemData.CachedObjectReference == null)
-                    {
-                        _label.text = $"Missing ({_itemData.LatestObjectName})";
-                    }
-                    else
-                    {
-                        _label.text = $"{_itemData.CachedObjectReference.name}";
-                    }
-                }
-
+                _label.text = GetDisplayName(_itemData);
                 // set tooltip to text to allow user to view longer names if the overflow from the view
                 tooltip = _label.text;
 
                 _icon.style.backgroundImage = new StyleBackground(_itemData.CachedAssetIcon as Texture2D);
+            }
+
+            public static string GetDisplayName(BookmarksWindowLocalState.Item itemData)
+            {
+                if (itemData.Type == BookmarksWindowLocalState.Item.ObjectType.SceneObject)
+                {
+                    if (itemData.CachedSceneAssetReference == null)
+                    {
+                        return $"Missing ({itemData.LatestSceneName} > {itemData.LatestObjectName})";
+                    }
+                    else if (itemData.CachedObjectReference == null)
+                    {
+                        return $"{itemData.CachedSceneAssetReference.name} > {itemData.LatestObjectName}";
+                    }
+                    else
+                    {
+                        return $"{itemData.CachedSceneAssetReference.name} > {itemData.CachedObjectReference.name}";
+                    }
+                }
+                else
+                {
+                    if (itemData.CachedObjectReference == null)
+                    {
+                        return $"Missing ({itemData.LatestObjectName})";
+                    }
+                    else
+                    {
+                        return itemData.CachedObjectReference.name;
+                    }
+                }
             }
         }
     }

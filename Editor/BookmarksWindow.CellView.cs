@@ -7,7 +7,7 @@ namespace UnityX.Bookmarks
 {
     public partial class BookmarksWindow
     {
-        private class CellView : VisualElement
+        internal class CellView : VisualElement
         {
             private readonly BookmarksWindowLocalState.Cell _cellData;
             private readonly Resources _resources;
@@ -207,15 +207,10 @@ namespace UnityX.Bookmarks
 
                 evt.menu.AppendSeparator();
 
-                evt.menu.AppendAction("Sort/Alphabetic", (x) =>
+                foreach (var sortAlgo in Bookmarks.SortingAlgorithms)
                 {
-                    EditorUtility.DisplayDialog("Todo", "Todo", "Ok");
-                });
-
-                evt.menu.AppendAction("Sort/Type Then Alphabetic", (x) =>
-                {
-                    EditorUtility.DisplayDialog("Todo", "Todo", "Ok");
-                });
+                    evt.menu.AppendAction($"Sort/{sortAlgo.MenuName}", (x) => SortItems(sortAlgo));
+                }
 
                 evt.menu.AppendAction("Rename", (x) =>
                 {
@@ -241,6 +236,17 @@ namespace UnityX.Bookmarks
                     }
                 });
             }
+
+            private void SortItems(BookmarkSortingAlgorithm itemComparison)
+            {
+                BookmarksWindowLocalState.Item.UpdateCaches_All(_cellData.Items);
+
+                BookmarksWindowLocalState.instance.BeginImportantChange();
+                _cellData.Items.Sort(itemComparison);
+                BookmarksWindowLocalState.instance.EndImportantChange();
+                UpdateItemViewList();
+            }
+
             private void MoveItemsFromOtherCellToHere(ItemView draggedItemView, int insertIndex)
             {
                 var draggedCellSource = draggedItemView.FirstParentOfType<CellView>();

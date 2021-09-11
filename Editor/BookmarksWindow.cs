@@ -5,28 +5,12 @@ using UnityEditor.UIElements;
 using System;
 using System.Collections.Generic;
 
-/*
- * Todos:
- * - Group Sort
- * - Group Sort Automation
- * - Group Color
- * - Automated Groups
- *     - Folder View - Shallow
- *     - Folder View - Deep
- *     - Project Library (displays the items listed in an asset file, included in the project assets (useful to share among teammates))
- *     - Custom
- *     
- * - Export All Groups to Json
- * - Export Group to Json
- * - Import Group from Json
- * 
- * */
 
 namespace UnityX.Bookmarks
 {
     public partial class BookmarksWindow : EditorWindow
     {
-        private class Resources
+        internal class Resources
         {
             public VisualTreeAsset CellAsset;
             public VisualTreeAsset ItemAsset;
