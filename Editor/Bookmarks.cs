@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -22,17 +23,26 @@ namespace UnityX.Bookmarks
             {
                 if (!type.IsAbstract)
                 {
+                    BookmarkSortingAlgorithm algoInstance = null;
                     try
                     {
-                        BookmarkSortingAlgorithm algoInstance = Activator.CreateInstance(type) as BookmarkSortingAlgorithm;
-                        if (algoInstance != null)
-                        {
-                            SortingAlgorithms.Add(algoInstance);
-                        }
+                        algoInstance = Activator.CreateInstance(type) as BookmarkSortingAlgorithm;
                     }
                     catch (Exception e)
                     {
-                        Debug.LogError($"Failed to instantiate bookmark algorithm {type.Name}: {e.Message}\n{e.StackTrace}");
+                        Debug.LogError($"Failed to instantiate bookmark sorting algorithm {type.Name}: {e.Message}\n{e.StackTrace}");
+                        continue;
+                    }
+
+                    if (algoInstance != null)
+                    {
+                        if (SortingAlgorithms.Any((x) => x.MenuName == algoInstance.MenuName))
+                        {
+                            Debug.LogError($"Failed to add bookmark sorting algorithm {type.Name}: an algorithm with the {nameof(BookmarkSortingAlgorithm.MenuName)} \"{algoInstance.MenuName}\" already exists.");
+                            continue;
+                        }
+
+                        SortingAlgorithms.Add(algoInstance);
                     }
                 }
             }

@@ -56,16 +56,28 @@ namespace UnityX.Bookmarks
 
             public void OnAssetChanged(string assetPath)
             {
-                if (_foldout.value)
+                if (!_foldout.value)
+                    return;
+
+                bool affectedByChange = false;
+
+                for (int i = 0; i < _itemsContainer.childCount; i++)
                 {
-                    for (int i = 0; i < _itemsContainer.childCount; i++)
+                    ItemView itemView = (ItemView)_itemsContainer.ElementAt(i);
+                    if (string.Equals(itemView.GetItem().CachedAssetPath, assetPath))
                     {
-                        ItemView itemView = (ItemView)_itemsContainer.ElementAt(i);
-                        if (string.Equals(itemView.GetItem().CachedAssetPath, assetPath))
-                        {
-                            BookmarksWindowLocalState.Item.UpdateCache_All(itemView.GetItem(), force: true);
-                            itemView.UpdateViewFromItemData();
-                        }
+                        affectedByChange = true;
+                        BookmarksWindowLocalState.Item.UpdateCache_All(itemView.GetItem(), force: true);
+                        itemView.UpdateViewFromItemData();
+                    }
+                }
+
+                if (affectedByChange)
+                {
+                    var sortingAlgo = _cellData.GetAutomatedSortingAlgorithm();
+                    if (sortingAlgo != null)
+                    {
+                        SortItems(sortingAlgo);
                     }
                 }
             }
@@ -106,11 +118,14 @@ namespace UnityX.Bookmarks
                 var objectReferences = DragAndDrop.objectReferences;
                 if (DragAndDrop.GetGenericData("shelf-item") is ItemView draggedItemView)
                 {
-                    DragAndDrop.AcceptDrag();
+                    if (CanMoveCellItemHere(draggedItemView))
+                    {
+                        DragAndDrop.AcceptDrag();
 
-                    _foldout.value = true; // make sure group is opened
+                        _foldout.value = true; // make sure group is opened
 
-                    MoveItemsFromOtherCellToHere(draggedItemView, insertIndex);
+                        MoveCellItemHere(draggedItemView, insertIndex);
+                    }
                 }
                 else if (CanAddAnyToCell(objectReferences))
                 {
@@ -120,16 +135,20 @@ namespace UnityX.Bookmarks
 
                     AddObjectsToCellData(DragAndDrop.objectReferences, insertIndex);
                 }
+
                 _dropGhostLine.visible = false;
                 evt.StopPropagation();
             }
 
             private bool UpdateDragAndDropVisualMode()
             {
-                if (DragAndDrop.GetGenericData("shelf-item") is ItemView)
+                if (DragAndDrop.GetGenericData("shelf-item") is ItemView draggedItemView)
                 {
-                    DragAndDrop.visualMode = DragAndDropVisualMode.Move;
-                    return true;
+                    if (CanMoveCellItemHere(draggedItemView))
+                    {
+                        DragAndDrop.visualMode = DragAndDropVisualMode.Move;
+                        return true;
+                    }
                 }
                 else if (CanAddAnyToCell(DragAndDrop.objectReferences))
                 {
@@ -186,15 +205,27 @@ namespace UnityX.Bookmarks
                 },
                 status: _cellData.RemoveMissingReferences ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
 
-                evt.menu.AppendAction("Automation/Sort/Alphabetic", (x) =>
+                var cellAutomatedSortingAlgo = _cellData.GetAutomatedSortingAlgorithm();
+                foreach (var sortAlgo in Bookmarks.SortingAlgorithms)
                 {
-                    EditorUtility.DisplayDialog("Todo", "Todo", "Ok");
-                });
-
-                evt.menu.AppendAction("Automation/Sort/Type Then Alphabetic", (x) =>
-                {
-                    EditorUtility.DisplayDialog("Todo", "Todo", "Ok");
-                });
+                    evt.menu.AppendAction($"Automation/Sort/{sortAlgo.MenuName}", (x) =>
+                    {
+                        if (cellAutomatedSortingAlgo == sortAlgo)
+                        {
+                            BookmarksWindowLocalState.instance.BeginImportantChange();
+                            _cellData.AutomatedSortingMenuName = string.Empty;
+                            BookmarksWindowLocalState.instance.EndImportantChange();
+                        }
+                        else
+                        {
+                            BookmarksWindowLocalState.instance.BeginImportantChange();
+                            _cellData.AutomatedSortingMenuName = sortAlgo.MenuName;
+                            _cellData.Items.Sort(sortAlgo);
+                            BookmarksWindowLocalState.instance.EndImportantChange();
+                            UpdateItemViewList();
+                        }
+                    }, status: cellAutomatedSortingAlgo == sortAlgo ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+                }
 
                 evt.menu.AppendAction("Color/Default", (x) => { });
                 evt.menu.AppendAction("Color/Red", (x) => { });
@@ -207,9 +238,16 @@ namespace UnityX.Bookmarks
 
                 evt.menu.AppendSeparator();
 
-                foreach (var sortAlgo in Bookmarks.SortingAlgorithms)
+                if (cellAutomatedSortingAlgo == null)
                 {
-                    evt.menu.AppendAction($"Sort/{sortAlgo.MenuName}", (x) => SortItems(sortAlgo));
+                    foreach (var sortAlgo in Bookmarks.SortingAlgorithms)
+                    {
+                        evt.menu.AppendAction($"Sort/{sortAlgo.MenuName}", (x) => SortItems(sortAlgo));
+                    }
+                }
+                else
+                {
+                    evt.menu.AppendAction($"Sort (Already Automated)", null, DropdownMenuAction.Status.Disabled);
                 }
 
                 evt.menu.AppendAction("Rename", (x) =>
@@ -247,40 +285,53 @@ namespace UnityX.Bookmarks
                 UpdateItemViewList();
             }
 
-            private void MoveItemsFromOtherCellToHere(ItemView draggedItemView, int insertIndex)
+            private void MoveCellItemHere(ItemView draggedItemView, int insertIndex)
             {
-                var draggedCellSource = draggedItemView.FirstParentOfType<CellView>();
-                if (draggedCellSource != null)
-                {
-                    BookmarksWindowLocalState.instance.BeginImportantChange();
+                if (!CanMoveCellItemHere(draggedItemView))
+                    return;
 
-                    if (draggedCellSource == this)
+                var draggedCellSource = draggedItemView.FirstParentOfType<CellView>();
+                BookmarksWindowLocalState.instance.BeginImportantChange();
+
+                if (draggedCellSource == this)
+                {
+                    _cellData.Items.Move(draggedItemView.GetItem(), insertIndex);
+                }
+                else
+                {
+                    // remove from other
+                    draggedCellSource._cellData.Items.Remove(draggedItemView.GetItem());
+
+                    // add to ours
+                    int indexHere = _cellData.IndexOfItem(draggedItemView.GetItem().GlobalObjectId);
+                    if (indexHere != -1) // if we already have that item, just move it
                     {
-                        _cellData.Items.Move(draggedItemView.GetItem(), insertIndex);
+                        _cellData.Items.Move(indexHere, insertIndex);
                     }
                     else
                     {
-                        // remove from other
-                        draggedCellSource._cellData.Items.Remove(draggedItemView.GetItem());
-
-                        // add to ours
-                        int indexHere = _cellData.IndexOfItem(draggedItemView.GetItem().GlobalObjectId);
-                        if (indexHere != -1) // if we already have that item, just move it
-                        {
-                            _cellData.Items.Move(indexHere, insertIndex);
-                        }
-                        else
-                        {
-                            _cellData.Items.Insert(insertIndex, draggedItemView.GetItem());
-                        }
+                        _cellData.Items.Insert(insertIndex, draggedItemView.GetItem());
                     }
-
-                    BookmarksWindowLocalState.instance.EndImportantChange();
-
-                    if (draggedCellSource != this)
-                        draggedCellSource.UpdateItemViewList();
-                    UpdateItemViewList();
                 }
+
+                BookmarksWindowLocalState.instance.EndImportantChange();
+
+                if (draggedCellSource != this)
+                    draggedCellSource.UpdateItemViewList();
+                UpdateItemViewList();
+            }
+
+            private bool CanMoveCellItemHere(ItemView draggedItemView)
+            {
+                var draggedCellSource = draggedItemView.FirstParentOfType<CellView>();
+                if (draggedCellSource == null)
+                    return false;
+
+                // If we're dragging a child and we have an automated sorting, refuse
+                if (draggedCellSource == this && _cellData.GetAutomatedSortingAlgorithm() != null)
+                    return false;
+
+                return true;
             }
 
             private bool CanAddAnyToCell(UnityEngine.Object[] selection)

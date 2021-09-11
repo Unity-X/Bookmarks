@@ -33,6 +33,21 @@ namespace UnityX.Bookmarks
             public List<Item> Items;
             public bool FoldoutOpened;
             public bool RemoveMissingReferences;
+            public string AutomatedSortingMenuName;
+
+            public BookmarkSortingAlgorithm GetAutomatedSortingAlgorithm()
+            {
+                if (string.IsNullOrEmpty(AutomatedSortingMenuName))
+                    return null;
+
+                foreach (var item in Bookmarks.SortingAlgorithms)
+                {
+                    if (item.MenuName == AutomatedSortingMenuName)
+                        return item;
+                }
+
+                return null;
+            }
 
             public int IndexOfItem(GlobalObjectId itemId)
             {
