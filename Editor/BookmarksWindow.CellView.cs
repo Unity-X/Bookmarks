@@ -201,7 +201,8 @@ namespace UnityX.Bookmarks
                     ProcessAssetChanges(importedAssets, ref affectedByChange);
                     ProcessAssetChanges(deletedAssets, ref affectedByChange);
                     ProcessAssetChanges(movedFromAssetPaths, ref affectedByChange);
-                    void ProcessAssetChanges(string[] paths, ref bool affectedByChange)
+
+                    void ProcessAssetChanges(string[] paths, ref bool affectedByChangeArg)
                     {
                         foreach (var assetPath in paths)
                         {
@@ -210,7 +211,7 @@ namespace UnityX.Bookmarks
                                 ItemView itemView = (ItemView)_itemsContainer.ElementAt(i);
                                 if (string.Equals(itemView.GetItem().CachedAssetPath, assetPath))
                                 {
-                                    affectedByChange = true;
+                                    affectedByChangeArg = true;
                                     BookmarksWindowLocalState.Item.UpdateCache_All(itemView.GetItem(), force: true);
                                     itemView.UpdateViewFromItemData();
                                 }

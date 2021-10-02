@@ -8,6 +8,52 @@ using UnityEngine.UIElements;
 
 namespace UnityX.Bookmarks
 {
+#if !UNITY_2021_2_OR_NEWER
+    internal class DropdownField : BaseField<int>
+    {
+        private Button _button;
+        private readonly List<string> _choices;
+
+        public DropdownField(string label, List<string> choices, int currentIndex) : base(label, new Button())
+        {
+            _button = this.Q<Button>();
+            _button.clickable.clickedWithEventInfo += OnButtonClicked;
+            _button.RegisterCallback<ContextualMenuPopulateEvent>((evt) =>
+            {
+                for (int i = 0; i < choices.Count; i++)
+                {
+                    int index = i;
+                    evt.menu.AppendAction(choices[i], (x) =>
+                    {
+                        value = index;
+                    });
+                }
+            });
+            
+            _choices = choices;
+            SetValueWithoutNotify(currentIndex);
+        }
+
+        public override void SetValueWithoutNotify(int newValue)
+        {
+            base.SetValueWithoutNotify(newValue);
+            UpdateButtonText();
+        }
+
+        private void UpdateButtonText()
+        {
+            _button.text = index >= 0 && index < _choices.Count ? _choices[index] : "";
+        }
+
+        private void OnButtonClicked(EventBase clickEvent)
+        {
+            _button.panel.contextualMenuManager.DisplayMenu(clickEvent, _button);
+        }
+
+        public int index => value;
+    }
+#endif
+
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = false)]
     internal class SubclassSelectorAttribute : PropertyAttribute
     {

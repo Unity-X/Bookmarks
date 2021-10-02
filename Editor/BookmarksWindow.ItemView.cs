@@ -21,7 +21,7 @@ namespace UnityX.Bookmarks
                 public CancellableClickable(Action handler) : base(handler) { }
                 public CancellableClickable(Action handler, long delay, long interval) : base(handler, delay, interval) { }
 
-                public void Cancel() { ProcessCancelEvent(PointerCancelEvent.GetPooled(), 0); }
+                public void Cancel() { ProcessUpEvent(PointerUpEvent.GetPooled(), Vector2.one * 9999999f, 0);}
             }
 
             private BookmarksWindowLocalState.Item _itemData;

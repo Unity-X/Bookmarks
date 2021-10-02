@@ -32,7 +32,7 @@ namespace UnityX.Bookmarks
         private bool _closeInNextUpdate = false;
         private string _cellPath;
         private SerializedObject _serializedObject;
-        private PropertyContainer _container;
+        private ScrollView _container;
         private SerializedProperty _useCustomColorProperty;
         private PropertyField _customColorView;
         private PropertyField _sortingAlgoView;
@@ -53,23 +53,6 @@ namespace UnityX.Bookmarks
                 Close();
         }
 
-        public class PropertyContainer : ScrollView
-        {
-            public Action PropertyChanged;
-
-            public PropertyContainer(ScrollViewMode scrollViewMode) : base(scrollViewMode)
-            {
-            }
-
-            public override void HandleEvent(EventBase evt)
-            {
-                base.HandleEvent(evt);
-
-                if (evt is SerializedPropertyChangeEvent)
-                    PropertyChanged?.Invoke();
-            }
-        }
-
         private void Init(BookmarksWindow.CellView cellView)
         {
             _cellView = cellView;
@@ -77,7 +60,7 @@ namespace UnityX.Bookmarks
             _serializedObject = new SerializedObject(BookmarksWindowLocalState.instance);
 
             rootVisualElement.Clear();
-            _container = new PropertyContainer(ScrollViewMode.Vertical);
+            _container = new ScrollView(ScrollViewMode.Vertical);
             _container.style.flexGrow = 1;
             _container.contentContainer.style.flexGrow = 1;
             rootVisualElement.Add(_container);
@@ -97,8 +80,8 @@ namespace UnityX.Bookmarks
             RegisterProperty("custom-color-value", nameof(BookmarksWindowLocalState.Cell.Color), out _customColorView, out SerializedProperty _);
 
             _container.Bind(_serializedObject);
-            _container.RegisterCallback<SerializedPropertyChangeEvent>(OnPropertyChange);
-            OnPropertyChange(null);
+            _container.RegisterCallback<SerializedPropertyChangeEvent>((evt)=>OnPropertyChange());
+            OnPropertyChange();
 
             foreach (var item in _container.Children())
             {
@@ -116,7 +99,7 @@ namespace UnityX.Bookmarks
 
         private void RegisterProperty(string viewName, string propName) => RegisterProperty(viewName, propName, out _, out _);
 
-        private void OnPropertyChange(SerializedPropertyChangeEvent evt)
+        private void OnPropertyChange()
         {
             _customColorView.style.display = new StyleEnum<DisplayStyle>(_useCustomColorProperty.boolValue ? DisplayStyle.Flex : DisplayStyle.None);
             _sortingAlgoView.style.display = new StyleEnum<DisplayStyle>(_cellView.CellData.DataSource?.ProvidedItemsAreAlreadySorted != true ? DisplayStyle.Flex : DisplayStyle.None);

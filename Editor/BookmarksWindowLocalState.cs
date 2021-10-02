@@ -204,7 +204,7 @@ namespace UnityX.Bookmarks
             {
                 if (!item._cachedAssetPathSet || force)
                 {
-                    item.CachedAssetPath = AssetDatabase.GUIDToAssetPath(item.GlobalObjectId.assetGUID);
+                    item.CachedAssetPath = AssetDatabase.GUIDToAssetPath(item.GlobalObjectId.assetGUID.ToString());
                 }
             }
 

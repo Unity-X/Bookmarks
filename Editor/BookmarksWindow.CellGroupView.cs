@@ -30,9 +30,6 @@ namespace UnityX.Bookmarks
                 Add(scrollView);
                 Add(addCellButton);
 
-                scrollView.verticalScrollerVisibility = ScrollerVisibility.Hidden;
-                scrollView.verticalScrollerVisibility = ScrollerVisibility.Auto;
-
                 foreach (var item in cellGroupData.Cells)
                 {
                     var cellView = new CellView(item, resources);
