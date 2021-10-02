@@ -1,0 +1,9 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <Style src="BookmarksWindow.uss" />
+    <uie:PropertyField name="name" label="Name" />
+    <uie:PropertyField name="data-source" label="Data Sources" />
+    <uie:PropertyField name="sort-algo" label="Sorting Steps" />
+    <uie:PropertyField name="remove-missing-refs" label="Remove Missing Refs" />
+    <uie:PropertyField name="custom-color" label="Custom Color" />
+    <uie:PropertyField name="custom-color-value" label="Color" />
+</ui:UXML>

@@ -25,19 +25,11 @@ namespace UnityX.Bookmarks
                 if (s_activeInstance == null)
                     return;
 
-                List<string> modifiedAssets = new List<string>(importedAssets.Length + deletedAssets.Length + movedFromAssetPaths.Length);
-                modifiedAssets.AddRange(importedAssets);
-                modifiedAssets.AddRange(deletedAssets);
-                modifiedAssets.AddRange(movedFromAssetPaths);
-
                 foreach (var cellGroupView in s_activeInstance._cellGroupViews)
                 {
                     foreach (var cell in cellGroupView.CellViews)
                     {
-                        foreach (var assetPath in modifiedAssets)
-                        {
-                            cell.OnAssetChanged(assetPath);
-                        }
+                        cell.OnAssetsChanged(importedAssets, deletedAssets, movedAssets, movedFromAssetPaths);
                     }
                 }
             }
@@ -96,6 +88,8 @@ namespace UnityX.Bookmarks
 
         private void ReloadWindow()
         {
+            BookmarkGroupInspectorWindow.Hide();
+
             VisualElement root = rootVisualElement;
 
             root.Clear();
@@ -127,9 +121,9 @@ namespace UnityX.Bookmarks
 
         private void AddGroupToData()
         {
-            BookmarksWindowLocalState.instance.BeginImportantChange();
+            BookmarksWindowLocalState.instance.BeginUndoableChange();
             BookmarksWindowLocalState.instance.CellGroups.Add(BookmarksWindowLocalState.CellGroup.CreateDefault());
-            BookmarksWindowLocalState.instance.EndImportantChange();
+            BookmarksWindowLocalState.instance.EndUndoableChange();
             ReloadWindow();
         }
 

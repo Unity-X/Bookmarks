@@ -2,9 +2,11 @@
 
 namespace UnityX.Bookmarks
 {
+    [System.Serializable]
     public abstract class BookmarkSortingAlgorithm : IComparer<BookmarksWindowLocalState.Item>
     {
-        public abstract string MenuName { get; }
+        public virtual string SortMenuDisplayName => GetType().Name;
+        public virtual bool DisplayInSortMenu => true;
         public abstract int Compare(BookmarksWindowLocalState.Item x, BookmarksWindowLocalState.Item y);
     }
 }

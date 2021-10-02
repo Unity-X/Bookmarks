@@ -43,9 +43,9 @@ namespace UnityX.Bookmarks
 
             private void AddCellToData()
             {
-                BookmarksWindowLocalState.instance.BeginImportantChange();
+                BookmarksWindowLocalState.instance.BeginUndoableChange();
                 _cellGroupData.Cells.Add(BookmarksWindowLocalState.Cell.CreateDefault());
-                BookmarksWindowLocalState.instance.EndImportantChange();
+                BookmarksWindowLocalState.instance.EndUndoableChange();
 
                 _resources.Window.ReloadWindow();
             }

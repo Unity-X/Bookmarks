@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
@@ -30,24 +29,15 @@ namespace UnityX.Bookmarks
         {
             public bool NameHasBeenSet;
             public string Name;
+            [SerializeReference, SubclassSelector] public BookmarkDataSource DataSource = null;
+            [SerializeReference, SubclassSelector] public BookmarkSortingAlgorithm SortingAlgorithm = null;
             public List<Item> Items;
             public bool FoldoutOpened;
             public bool RemoveMissingReferences;
-            public string AutomatedSortingMenuName;
-
-            public BookmarkSortingAlgorithm GetAutomatedSortingAlgorithm()
-            {
-                if (string.IsNullOrEmpty(AutomatedSortingMenuName))
-                    return null;
-
-                foreach (var item in Bookmarks.SortingAlgorithms)
-                {
-                    if (item.MenuName == AutomatedSortingMenuName)
-                        return item;
-                }
-
-                return null;
-            }
+            public int SortByType; // 1 ascendant, -1 descendant, 0 none
+            public int SortByName; // 1 ascendant, -1 descendant, 0 none
+            public bool UseCustomColor;
+            public Color Color;
 
             public int IndexOfItem(GlobalObjectId itemId)
             {
@@ -308,12 +298,12 @@ namespace UnityX.Bookmarks
 
         public List<CellGroup> CellGroups = new List<CellGroup>();
 
-        public void BeginImportantChange()
+        public void BeginUndoableChange()
         {
             Undo.RecordObject(this, "Shelf Window Change");
         }
 
-        public void EndImportantChange()
+        public void EndUndoableChange()
         {
             CellGroups.RemoveAll((g) => g.Cells.Count == 0);
             if (CellGroups.Count == 0)

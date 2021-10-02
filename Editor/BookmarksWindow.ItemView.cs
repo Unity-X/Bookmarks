@@ -108,10 +108,17 @@ namespace UnityX.Bookmarks
 
             private void PopulateContextualMenu(ContextualMenuPopulateEvent evt)
             {
-                evt.menu.AppendAction("Remove", (x) =>
+                if (GetCell().DataSource == null)
                 {
-                    RemoveRequested?.Invoke(_itemData);
-                });
+                    evt.menu.AppendAction("Remove", (x) =>
+                    {
+                        RemoveRequested?.Invoke(_itemData);
+                    }, status: GetCell().DataSource == null ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+                }
+                else
+                {
+                    evt.menu.AppendAction("Remove (Managed by Data Source)", null, status:  DropdownMenuAction.Status.Disabled);
+                }
             }
 
             private void OnMouseEnterEvent(MouseEnterEvent evt)
@@ -168,6 +175,7 @@ namespace UnityX.Bookmarks
             }
 
             public BookmarksWindowLocalState.Item GetItem() => _itemData;
+            public BookmarksWindowLocalState.Cell GetCell() => this.FirstParentOfType<CellView>().CellData;
 
             public void SetItem(BookmarksWindowLocalState.Item itemData)
             {

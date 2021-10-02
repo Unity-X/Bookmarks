@@ -17,6 +17,15 @@ namespace UnityX.Bookmarks
             if (Initialized)
                 return;
 
+            GetSortingAlgorithms();
+
+            Initialized = true;
+        }
+
+        private static void GetSortingAlgorithms()
+        {
+            SortMenuAlgorithms.Clear();
+
             TypeCache.TypeCollection sortingAlgoTypes = TypeCache.GetTypesDerivedFrom<BookmarkSortingAlgorithm>();
 
             foreach (Type type in sortingAlgoTypes)
@@ -36,22 +45,23 @@ namespace UnityX.Bookmarks
 
                     if (algoInstance != null)
                     {
-                        if (SortingAlgorithms.Any((x) => x.MenuName == algoInstance.MenuName))
+                        if (!algoInstance.DisplayInSortMenu)
+                            continue;
+
+                        if (SortMenuAlgorithms.Any((x) => x.SortMenuDisplayName == algoInstance.SortMenuDisplayName))
                         {
-                            Debug.LogError($"Failed to add bookmark sorting algorithm {type.Name}: an algorithm with the {nameof(BookmarkSortingAlgorithm.MenuName)} \"{algoInstance.MenuName}\" already exists.");
+                            Debug.LogError($"Failed to add bookmark sorting algorithm {type.Name}: an algorithm with the {nameof(BookmarkSortingAlgorithm.SortMenuDisplayName)} \"{algoInstance.SortMenuDisplayName}\" already exists.");
                             continue;
                         }
 
-                        SortingAlgorithms.Add(algoInstance);
+                        SortMenuAlgorithms.Add(algoInstance);
                     }
                 }
             }
 
-            SortingAlgorithms.Sort((a, b) => a.MenuName.CompareTo(b.MenuName));
-
-            Initialized = true;
+            SortMenuAlgorithms.Sort((a, b) => a.SortMenuDisplayName.CompareTo(b.SortMenuDisplayName));
         }
 
-        public readonly static List<BookmarkSortingAlgorithm> SortingAlgorithms = new List<BookmarkSortingAlgorithm>();
+        public readonly static List<BookmarkSortingAlgorithm> SortMenuAlgorithms = new List<BookmarkSortingAlgorithm>();
     }
 }

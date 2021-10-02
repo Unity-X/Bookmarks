@@ -3,6 +3,7 @@ using UnityEngine.UIElements;
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
+
 namespace UnityX.Bookmarks
 {
     public partial class BookmarksWindow
@@ -16,7 +17,11 @@ namespace UnityX.Bookmarks
             private readonly VisualElement _itemsContainer;
             private readonly TextField _nameInputField;
             private readonly VisualElement _dropGhostLine;
-            private bool _hasUpdatedItemViewListAtLeastOnce;
+            private BookmarkDataSource _hookedDataSource;
+            private BookmarkSortingAlgorithm _hookedSortingAlgo;
+            private bool _initComplete;
+
+            internal BookmarksWindowLocalState.Cell CellData => _cellData;
 
             public CellView(BookmarksWindowLocalState.Cell cellData, Resources resources)
             {
@@ -51,35 +56,134 @@ namespace UnityX.Bookmarks
                 RegisterCallback<DragUpdatedEvent>(OnDragUpdated);
                 RegisterCallback<DragPerformEvent>(OnDragPerformed);
 
+                OnAutomatedDataSourceChanged();
+                OnAutomatedSortingChanged();
+
+                _initComplete = true;
+
                 UpdateItemViewList();
             }
 
-            public void OnAssetChanged(string assetPath)
+            private void OnAutomatedSortingChanged(bool forceUpdate = false)
+            {
+                var newSource = _cellData.SortingAlgorithm;
+                if (_hookedSortingAlgo == newSource && !forceUpdate)
+                    return;
+
+                _hookedSortingAlgo = newSource;
+
+                if (_hookedSortingAlgo != null)
+                {
+                    _cellData.Items.Sort(_hookedSortingAlgo);
+                    UpdateItemViewList();
+                }
+            }
+
+            private void OnAutomatedDataSourceChanged(bool forceUpdate = false)
+            {
+                var newSource = _cellData.DataSource;
+                if (_hookedDataSource == newSource && !forceUpdate)
+                    return;
+
+                if (_hookedDataSource != null)
+                {
+                    _hookedDataSource.ItemsChanged -= OnAutomatedDataSourceItemsChanged;
+                }
+
+                _hookedDataSource = newSource;
+
+                if (_hookedDataSource != null)
+                {
+                    _hookedDataSource.ItemsChanged += OnAutomatedDataSourceItemsChanged;
+                    OnAutomatedDataSourceItemsChanged();
+                }
+            }
+
+            private void OnAutomatedDataSourceItemsChanged()
+            {
+                GlobalObjectId[] newItems = _hookedDataSource.ProvideItems();
+
+                // remove old items
+                for (int i = _cellData.Items.Count - 1; i >= 0; i--)
+                {
+                    if (Array.IndexOf(newItems, _cellData.Items[i].GlobalObjectId) == -1)
+                    {
+                        _cellData.Items.RemoveAt(i);
+                    }
+                }
+
+                // add new items
+                foreach (var item in newItems)
+                {
+                    if (!_cellData.HasItem(item))
+                    {
+                        _cellData.Items.Add(new BookmarksWindowLocalState.Item()
+                        {
+                            GlobalObjectId = item
+                        });
+                    }
+                }
+
+                if (_foldout.value)
+                {
+                    BookmarksWindowLocalState.Item.UpdateCaches_All(_cellData.Items, force: true);
+
+                    // Sort if needed
+                    var sortingAlgo = _cellData.SortingAlgorithm;
+                    if (sortingAlgo != null)
+                    {
+                        _cellData.Items.Sort(sortingAlgo);
+                    }
+
+                    UpdateItemViewList();
+                }
+            }
+
+            public void OnAssetsChanged(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
             {
                 if (!_foldout.value)
                     return;
 
                 bool affectedByChange = false;
 
-                for (int i = 0; i < _itemsContainer.childCount; i++)
+                if (_cellData.DataSource != null)
                 {
-                    ItemView itemView = (ItemView)_itemsContainer.ElementAt(i);
-                    if (string.Equals(itemView.GetItem().CachedAssetPath, assetPath))
+                    _cellData.DataSource.OnAssetsModifiedWhileBookmarksDisplayed(importedAssets, deletedAssets, movedAssets, movedFromAssetPaths);
+                }
+                else
+                {
+                    ProcessAssetChanges(importedAssets, ref affectedByChange);
+                    ProcessAssetChanges(deletedAssets, ref affectedByChange);
+                    ProcessAssetChanges(movedFromAssetPaths, ref affectedByChange);
+                    void ProcessAssetChanges(string[] paths, ref bool affectedByChange)
                     {
-                        affectedByChange = true;
-                        BookmarksWindowLocalState.Item.UpdateCache_All(itemView.GetItem(), force: true);
-                        itemView.UpdateViewFromItemData();
+                        foreach (var assetPath in paths)
+                        {
+                            for (int i = 0; i < _itemsContainer.childCount; i++)
+                            {
+                                ItemView itemView = (ItemView)_itemsContainer.ElementAt(i);
+                                if (string.Equals(itemView.GetItem().CachedAssetPath, assetPath))
+                                {
+                                    affectedByChange = true;
+                                    BookmarksWindowLocalState.Item.UpdateCache_All(itemView.GetItem(), force: true);
+                                    itemView.UpdateViewFromItemData();
+                                }
+                            }
+                        }
                     }
+
+                    if (affectedByChange)
+                    {
+                        var sortingAlgo = _cellData.SortingAlgorithm;
+                        if (sortingAlgo != null)
+                        {
+                            _cellData.Items.Sort(sortingAlgo);
+                            UpdateItemViewList();
+                        }
+                    }
+
                 }
 
-                if (affectedByChange)
-                {
-                    var sortingAlgo = _cellData.GetAutomatedSortingAlgorithm();
-                    if (sortingAlgo != null)
-                    {
-                        SortItems(sortingAlgo);
-                    }
-                }
             }
 
             private void OnDragEnter(DragEnterEvent evt)
@@ -163,8 +267,11 @@ namespace UnityX.Bookmarks
             {
                 _cellData.FoldoutOpened = evt.newValue;
 
-                if (!_hasUpdatedItemViewListAtLeastOnce)
+                if (evt.newValue)
+                {
+                    BookmarksWindowLocalState.Item.UpdateCaches_All(_cellData.Items, force: true);
                     UpdateItemViewList();
+                }
             }
 
             private void OnGeometryChanged(GeometryChangedEvent evt)
@@ -197,52 +304,28 @@ namespace UnityX.Bookmarks
 
             private void PopulateOptionsMenu(ContextualMenuPopulateEvent evt)
             {
-                evt.menu.AppendAction("Automation/Remove Missing References", (x) =>
+                evt.menu.AppendAction("Settings", (x) =>
                 {
-                    BookmarksWindowLocalState.instance.BeginImportantChange();
-                    _cellData.RemoveMissingReferences = !_cellData.RemoveMissingReferences;
-                    BookmarksWindowLocalState.instance.EndImportantChange();
-                },
-                status: _cellData.RemoveMissingReferences ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
-
-                var cellAutomatedSortingAlgo = _cellData.GetAutomatedSortingAlgorithm();
-                foreach (var sortAlgo in Bookmarks.SortingAlgorithms)
-                {
-                    evt.menu.AppendAction($"Automation/Sort/{sortAlgo.MenuName}", (x) =>
-                    {
-                        if (cellAutomatedSortingAlgo == sortAlgo)
-                        {
-                            BookmarksWindowLocalState.instance.BeginImportantChange();
-                            _cellData.AutomatedSortingMenuName = string.Empty;
-                            BookmarksWindowLocalState.instance.EndImportantChange();
-                        }
-                        else
-                        {
-                            BookmarksWindowLocalState.instance.BeginImportantChange();
-                            _cellData.AutomatedSortingMenuName = sortAlgo.MenuName;
-                            _cellData.Items.Sort(sortAlgo);
-                            BookmarksWindowLocalState.instance.EndImportantChange();
-                            UpdateItemViewList();
-                        }
-                    }, status: cellAutomatedSortingAlgo == sortAlgo ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
-                }
-
-                evt.menu.AppendAction("Color/Default", (x) => { });
-                evt.menu.AppendAction("Color/Red", (x) => { });
-                evt.menu.AppendAction("Color/Blue", (x) => { });
-                evt.menu.AppendAction("Color/Yellow", (x) => { });
-                evt.menu.AppendAction("Color/Green", (x) => { });
-                evt.menu.AppendAction("Color/Purple", (x) => { });
-                evt.menu.AppendAction("Color/Orange", (x) => { });
-                evt.menu.AppendAction("Color/Custom", (x) => { });
+                    BookmarkGroupInspectorWindow.Show(this, _resources.Window.position);
+                });
 
                 evt.menu.AppendSeparator();
 
-                if (cellAutomatedSortingAlgo == null)
+
+                if (_cellData.SortingAlgorithm == null)
                 {
-                    foreach (var sortAlgo in Bookmarks.SortingAlgorithms)
+                    foreach (var sortAlgo in Bookmarks.SortMenuAlgorithms)
                     {
-                        evt.menu.AppendAction($"Sort/{sortAlgo.MenuName}", (x) => SortItems(sortAlgo));
+                        evt.menu.AppendAction($"Sort/{sortAlgo.SortMenuDisplayName}", (x) =>
+                        {
+                            BookmarksWindowLocalState.Item.UpdateCaches_All(_cellData.Items);
+
+                            BookmarksWindowLocalState.instance.BeginUndoableChange();
+                            _cellData.Items.Sort(sortAlgo);
+                            BookmarksWindowLocalState.instance.EndUndoableChange();
+
+                            UpdateItemViewList();
+                        });
                     }
                 }
                 else
@@ -264,25 +347,15 @@ namespace UnityX.Bookmarks
                 {
                     if (EditorUtility.DisplayDialog("Delete Group", $"You are about to delete the '{_cellData.Name}' group.", "Delete Group", "Cancel"))
                     {
-                        BookmarksWindowLocalState.instance.BeginImportantChange();
+                        BookmarksWindowLocalState.instance.BeginUndoableChange();
                         foreach (var item in BookmarksWindowLocalState.instance.CellGroups)
                         {
                             item.Cells.Remove(_cellData);
                         }
-                        BookmarksWindowLocalState.instance.EndImportantChange();
+                        BookmarksWindowLocalState.instance.EndUndoableChange();
                         _resources.Window.ReloadWindow();
                     }
                 });
-            }
-
-            private void SortItems(BookmarkSortingAlgorithm itemComparison)
-            {
-                BookmarksWindowLocalState.Item.UpdateCaches_All(_cellData.Items);
-
-                BookmarksWindowLocalState.instance.BeginImportantChange();
-                _cellData.Items.Sort(itemComparison);
-                BookmarksWindowLocalState.instance.EndImportantChange();
-                UpdateItemViewList();
             }
 
             private void MoveCellItemHere(ItemView draggedItemView, int insertIndex)
@@ -291,7 +364,7 @@ namespace UnityX.Bookmarks
                     return;
 
                 var draggedCellSource = draggedItemView.FirstParentOfType<CellView>();
-                BookmarksWindowLocalState.instance.BeginImportantChange();
+                BookmarksWindowLocalState.instance.BeginUndoableChange();
 
                 if (draggedCellSource == this)
                 {
@@ -314,7 +387,7 @@ namespace UnityX.Bookmarks
                     }
                 }
 
-                BookmarksWindowLocalState.instance.EndImportantChange();
+                BookmarksWindowLocalState.instance.EndUndoableChange();
 
                 if (draggedCellSource != this)
                     draggedCellSource.UpdateItemViewList();
@@ -328,7 +401,11 @@ namespace UnityX.Bookmarks
                     return false;
 
                 // If we're dragging a child and we have an automated sorting, refuse
-                if (draggedCellSource == this && _cellData.GetAutomatedSortingAlgorithm() != null)
+                if (draggedCellSource == this && _cellData.SortingAlgorithm != null)
+                    return false;
+
+                // If we're dragging from another source and we have an automated source, refuse
+                if (draggedCellSource != this && _cellData.DataSource != null)
                     return false;
 
                 return true;
@@ -336,6 +413,9 @@ namespace UnityX.Bookmarks
 
             private bool CanAddAnyToCell(UnityEngine.Object[] selection)
             {
+                if (_cellData.DataSource != null)
+                    return false;
+
                 GlobalObjectId[] ids = new GlobalObjectId[selection.Length];
                 GlobalObjectId.GetGlobalObjectIdsSlow(selection, ids);
 
@@ -349,7 +429,7 @@ namespace UnityX.Bookmarks
 
             private void AddObjectsToCellData(UnityEngine.Object[] selection, int insertIndex)
             {
-                BookmarksWindowLocalState.instance.BeginImportantChange();
+                BookmarksWindowLocalState.instance.BeginUndoableChange();
                 GlobalObjectId[] ids = new GlobalObjectId[selection.Length];
                 GlobalObjectId.GetGlobalObjectIdsSlow(selection, ids);
 
@@ -364,17 +444,15 @@ namespace UnityX.Bookmarks
                     }
                 }
 
-                BookmarksWindowLocalState.instance.EndImportantChange();
+                BookmarksWindowLocalState.instance.EndUndoableChange();
 
                 UpdateItemViewList();
             }
 
             private void UpdateItemViewList()
             {
-                if (!_foldout.value)
+                if (!_foldout.value || !_initComplete)
                     return;
-
-                _hasUpdatedItemViewListAtLeastOnce = true;
 
                 BookmarksWindowLocalState.Item.UpdateCaches_All(_cellData.Items);
 
@@ -400,9 +478,9 @@ namespace UnityX.Bookmarks
 
             private void OnItemRemoveRequested(BookmarksWindowLocalState.Item itemData)
             {
-                BookmarksWindowLocalState.instance.BeginImportantChange();
+                BookmarksWindowLocalState.instance.BeginUndoableChange();
                 _cellData.Items.Remove(itemData);
-                BookmarksWindowLocalState.instance.EndImportantChange();
+                BookmarksWindowLocalState.instance.EndUndoableChange();
                 UpdateItemViewList();
             }
 
@@ -414,10 +492,10 @@ namespace UnityX.Bookmarks
 
             private void EndRename()
             {
-                BookmarksWindowLocalState.instance.BeginImportantChange();
+                BookmarksWindowLocalState.instance.BeginUndoableChange();
                 _cellData.Name = _nameInputField.value;
                 _cellData.NameHasBeenSet = true;
-                BookmarksWindowLocalState.instance.EndImportantChange();
+                BookmarksWindowLocalState.instance.EndUndoableChange();
 
                 ShowNameEditable(false);
             }
@@ -455,6 +533,15 @@ namespace UnityX.Bookmarks
 
                 float lineThickness = _dropGhostLine.resolvedStyle.height;
                 return Mathf.Clamp(yPos, 0, contentRect.yMax - lineThickness);
+            }
+
+            public void OnSettingsModified()
+            {
+                _foldout.text = _cellData.Name;
+                _nameInputField.value = _cellData.Name;
+
+                OnAutomatedDataSourceChanged(forceUpdate: true);
+                OnAutomatedSortingChanged(forceUpdate: true);
             }
         }
     }

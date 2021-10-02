@@ -2,21 +2,19 @@
 {
     public static class DefaultSortingAlgorithms
     {
+        [System.Serializable]
         public class Alphabetic : BookmarkSortingAlgorithm
         {
-            public override string MenuName => "Alphabetic";
-
             public override int Compare(BookmarksWindowLocalState.Item x, BookmarksWindowLocalState.Item y)
             {
                 return BookmarksWindow.ItemView.GetDisplayName(x).CompareTo(BookmarksWindow.ItemView.GetDisplayName(y));
             }
         }
 
+        [System.Serializable]
         public class TypeThenAlphabetic : BookmarkSortingAlgorithm
         {
             private Alphabetic _alphabetic = new Alphabetic();
-
-            public override string MenuName => "Type Then Alphabetic";
 
             public override int Compare(BookmarksWindowLocalState.Item x, BookmarksWindowLocalState.Item y)
             {
