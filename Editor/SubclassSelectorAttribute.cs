@@ -8,7 +8,7 @@ using UnityEngine.UIElements;
 
 namespace UnityX.Bookmarks
 {
-#if !UNITY_2021_2_OR_NEWER
+#if !UNITY_2021_1_OR_NEWER
     internal class DropdownField : BaseField<int>
     {
         private Button _button;
