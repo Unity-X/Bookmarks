@@ -13,6 +13,17 @@ namespace UnityX.Bookmarks
     {
         internal class ItemView : VisualElement
         {
+            // This is a hacky way to correctly release the pointer when we begin drag.
+            // I did not find a better way (panel.ReleasePointer leaves the VE in active state)
+            private class CancellableClickable : Clickable
+            {
+                public CancellableClickable(Action<EventBase> handler) : base(handler) { }
+                public CancellableClickable(Action handler) : base(handler) { }
+                public CancellableClickable(Action handler, long delay, long interval) : base(handler, delay, interval) { }
+
+                public void Cancel() { ProcessCancelEvent(PointerCancelEvent.GetPooled(), 0); }
+            }
+
             private BookmarksWindowLocalState.Item _itemData;
             private readonly Resources _resources;
             private Label _label;
@@ -33,6 +44,8 @@ namespace UnityX.Bookmarks
                 _icon = this.Q<VisualElement>("icon");
                 _button = this.Q<Button>("button");
                 _dragGhost = this.Q("drag-ghost");
+
+                _button.clickable = new CancellableClickable(default(Action));
 
                 ShowDraggedVisuals(false);
 
@@ -98,7 +111,9 @@ namespace UnityX.Bookmarks
 
                     DragAndDrop.SetGenericData("shelf-item", this);
                     DragAndDrop.StartDrag("Shelf Item Drag");
-                    _button.panel.ReleasePointer(PointerId.mousePointerId);
+
+                    // cancel click, this will release pointer and remove the 'active' state from the button
+                    ((CancellableClickable)_button.clickable).Cancel();
 
                     ShowDraggedVisuals(true);
                     _resources.DraggedItem = this;
@@ -117,7 +132,7 @@ namespace UnityX.Bookmarks
                 }
                 else
                 {
-                    evt.menu.AppendAction("Remove (Managed by Data Source)", null, status:  DropdownMenuAction.Status.Disabled);
+                    evt.menu.AppendAction("Remove (Managed by Data Source)", null, status: DropdownMenuAction.Status.Disabled);
                 }
             }
 

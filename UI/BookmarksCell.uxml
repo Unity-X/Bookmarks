@@ -1,6 +1,6 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
     <Style src="BookmarksWindow.uss" />
-    <ui:Foldout text="Foldout" name="foldout" class="cell-foldout" style="background-color: rgb(166, 166, 166); font-size: 16px; border-left-width: 1px; border-right-width: 0; border-top-width: 0; border-bottom-width: 1px; border-left-color: rgba(0, 0, 0, 0.28); border-right-color: rgba(0, 0, 0, 0.28); border-top-color: rgba(0, 0, 0, 0.28); border-bottom-color: rgba(0, 0, 0, 0.28);">
+    <ui:Foldout text="Foldout" name="foldout" class="cell-foldout" style="font-size: 16px; border-left-width: 1px; border-right-width: 0; border-top-width: 0; border-bottom-width: 1px; border-left-color: rgba(0, 0, 0, 0.28); border-right-color: rgba(0, 0, 0, 0.28); border-top-color: rgba(0, 0, 0, 0.28); border-bottom-color: rgba(0, 0, 0, 0.28);">
         <uie:Toolbar style="display: none; visibility: hidden;">
             <uie:ToolbarButton text="Type ↓" display-tooltip-when-elided="true" name="sort-button-type" />
             <uie:ToolbarButton text="Name v" display-tooltip-when-elided="true" name="sort-button-name" />
@@ -8,7 +8,7 @@
         </uie:Toolbar>
         <ui:VisualElement name="items-container" />
     </ui:Foldout>
-    <ui:Button display-tooltip-when-elided="true" name="options-button" style="position: absolute; right: 4px; top: 3px; background-color: rgba(228, 228, 228, 0); border-left-width: 0; border-right-width: 0; border-top-width: 0; border-bottom-width: 0; border-top-left-radius: 0; border-bottom-left-radius: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; width: 20px; height: 20px; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; background-image: url(&apos;/Packages/com.unity-x.bookmarks/UI/Gear Icon.png&apos;); -unity-slice-left: 0; -unity-slice-top: 0; -unity-slice-right: 0; -unity-slice-bottom: 0; -unity-background-image-tint-color: rgba(0, 0, 0, 0.38);">
+    <ui:Button display-tooltip-when-elided="true" name="options-button" style="position: absolute; right: 4px; top: 3px; background-color: rgba(228, 228, 228, 0); border-left-width: 0; border-right-width: 0; border-top-width: 0; border-bottom-width: 0; border-top-left-radius: 0; border-bottom-left-radius: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; width: 20px; height: 20px; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; background-image: url(&apos;/Packages/com.unity-x.bookmarks/UI/Gear Icon.png#Gear Icon&apos;); -unity-slice-left: 0; -unity-slice-top: 0; -unity-slice-right: 0; -unity-slice-bottom: 0;">
         <ui:VisualElement style="flex-grow: 1;" />
     </ui:Button>
     <ui:TextField picking-mode="Ignore" value="filler text" text="filler text" readonly="false" name="name-input" class="cell-name" style="position: absolute; right: 25px; left: 0;" />

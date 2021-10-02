@@ -58,7 +58,7 @@
 }
 
 .item {
-    background-color: rgb(189, 189, 189);
+    background-color: var(--unity-colors-toolbar_button-background-hover);
     border-left-color: rgba(0, 0, 0, 0);
     border-right-color: rgba(0, 0, 0, 0);
     border-top-color: rgba(0, 0, 0, 0);
@@ -71,12 +71,12 @@
 }
 
 .item:hover {
-    background-color: rgb(237, 237, 237);
+    background-color: var(--unity-colors-toolbar_button-background-checked);
     opacity: 1;
 }
 
 .item:hover:active {
-    background-color: rgb(227, 227, 227);
+    background-color: var(--unity-colors-button-background);
 }
 
 .cell-foldout .unity-toggle__text {
@@ -100,4 +100,12 @@
 
 #options-button > VisualElement:hover {
     background-color: rgba(255, 255, 255, 0.18);
+}
+
+.cell-foldout {
+    background-color: var(--unity-colors-toolbar-background);
+}
+
+#options-button {
+    -unity-background-image-tint-color: var(--unity-colors-default-text); /*rgba(101, 101, 101, 255);*/
 }
