@@ -50,6 +50,8 @@ namespace UnityX.Bookmarks
                 _optionsButton.clickable.clickedWithEventInfo += OnOptionsButtonClicked;
                 _foldout.AddManipulator(new ContextualMenuManipulator(PopulateOptionsMenu));
                 _foldout.RegisterValueChangedCallback(OnFoldoutCollapseChange);
+                if (_cellData.UseCustomColor)
+                    _foldout.style.backgroundColor = new StyleColor(_cellData.Color);
                 RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
 
                 RegisterCallback<DragEnterEvent>(OnDragEnter);
@@ -67,7 +69,6 @@ namespace UnityX.Bookmarks
 
             private void OnAutomatedSortingChanged(bool forceUpdate = false)
             {
-
                 var newSource = _cellData.SortingAlgorithm;
                 bool sourceChange = _hookedSortingAlgo != newSource;
 
@@ -368,12 +369,12 @@ namespace UnityX.Bookmarks
                     evt.menu.AppendAction($"Sort (Already Automated)", null, DropdownMenuAction.Status.Disabled);
                 }
 
-                evt.menu.AppendAction("Add Current Selection To Group", (x) =>
+                evt.menu.AppendAction("Add Current Selection", (x) =>
                 {
                     AddObjectsToCellData(Selection.objects, insertIndex: _cellData.Items.Count);
                 }, status: CanAddAnyToCell(Selection.objects) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
 
-                evt.menu.AppendAction("Delete Group", (x) =>
+                evt.menu.AppendAction("Delete", (x) =>
                 {
                     if (EditorUtility.DisplayDialog("Delete Group", $"You are about to delete the '{_cellData.Name}' group.", "Delete Group", "Cancel"))
                     {
@@ -435,7 +436,7 @@ namespace UnityX.Bookmarks
                     return false;
 
                 // If we're dragging from another source and we have an automated source, refuse
-                if (draggedCellSource != this && _cellData.DataSource != null)
+                if (draggedCellSource != this && _cellData.DataSource != null || draggedCellSource.CellData.DataSource != null)
                     return false;
 
                 return true;
@@ -573,6 +574,11 @@ namespace UnityX.Bookmarks
 
                 OnAutomatedDataSourceChanged(forceUpdate: true);
                 OnAutomatedSortingChanged(forceUpdate: true);
+
+                if (_cellData.UseCustomColor)
+                    _foldout.style.backgroundColor = new StyleColor(_cellData.Color);
+                else
+                    _foldout.style.backgroundColor = new StyleColor(StyleKeyword.Initial);
             }
         }
     }

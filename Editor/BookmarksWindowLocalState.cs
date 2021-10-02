@@ -37,7 +37,7 @@ namespace UnityX.Bookmarks
             public int SortByType; // 1 ascendant, -1 descendant, 0 none
             public int SortByName; // 1 ascendant, -1 descendant, 0 none
             public bool UseCustomColor;
-            public Color Color;
+            public Color Color = new Color(0, 0.5f, 1f, 0.2f);
 
             public int IndexOfItem(GlobalObjectId itemId)
             {

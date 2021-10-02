@@ -49,7 +49,7 @@ namespace UnityX.Bookmarks
 
         private void OnGUI()
         {
-            if (_closeInNextUpdate || focusedWindow != this)
+            if (_closeInNextUpdate)
                 Close();
         }
 
