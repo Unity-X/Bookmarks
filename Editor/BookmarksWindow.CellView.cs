@@ -48,7 +48,7 @@ namespace UnityX.Bookmarks
                 _nameInputField.RegisterCallback<FocusOutEvent>(OnNameInputFieldLoseFocus);
                 _nameInputField.RegisterValueChangedCallback(OnNameInputValueChanged);
                 _optionsButton.clickable.clickedWithEventInfo += OnOptionsButtonClicked;
-                _foldout.AddManipulator(new ContextualMenuManipulator(PopulateOptionsMenu));
+                _foldout.Q<Toggle>().AddManipulator(new ContextualMenuManipulator(PopulateOptionsMenu));
                 _foldout.RegisterValueChangedCallback(OnFoldoutCollapseChange);
                 if (_cellData.UseCustomColor)
                     _foldout.style.backgroundColor = new StyleColor(_cellData.Color);
