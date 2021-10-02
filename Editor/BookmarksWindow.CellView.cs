@@ -3,6 +3,7 @@ using UnityEngine.UIElements;
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace UnityX.Bookmarks
 {
@@ -47,7 +48,7 @@ namespace UnityX.Bookmarks
                 _nameInputField.RegisterCallback<FocusOutEvent>(OnNameInputFieldLoseFocus);
                 _nameInputField.RegisterValueChangedCallback(OnNameInputValueChanged);
                 _optionsButton.clickable.clickedWithEventInfo += OnOptionsButtonClicked;
-                _optionsButton.RegisterCallback<ContextualMenuPopulateEvent>(PopulateOptionsMenu);
+                _foldout.AddManipulator(new ContextualMenuManipulator(PopulateOptionsMenu));
                 _foldout.RegisterValueChangedCallback(OnFoldoutCollapseChange);
                 RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
 
@@ -66,35 +67,51 @@ namespace UnityX.Bookmarks
 
             private void OnAutomatedSortingChanged(bool forceUpdate = false)
             {
+
                 var newSource = _cellData.SortingAlgorithm;
-                if (_hookedSortingAlgo == newSource && !forceUpdate)
-                    return;
+                bool sourceChange = _hookedSortingAlgo != newSource;
 
-                _hookedSortingAlgo = newSource;
-
-                if (_hookedSortingAlgo != null)
+                if (sourceChange)
                 {
-                    _cellData.Items.Sort(_hookedSortingAlgo);
-                    UpdateItemViewList();
+                    _hookedSortingAlgo?.Disable();
+                    _hookedSortingAlgo = newSource;
+                    _hookedSortingAlgo?.Enable();
+                }
+
+                if ((sourceChange || forceUpdate) && _hookedSortingAlgo != null)
+                {
+                    if (_cellData.DataSource == null || !_cellData.DataSource.ProvidedItemsAreAlreadySorted) // skip sorting if DataSource already sorts
+                    {
+                        _cellData.Items.Sort(_hookedSortingAlgo);
+                        UpdateItemViewList();
+                    }
                 }
             }
 
             private void OnAutomatedDataSourceChanged(bool forceUpdate = false)
             {
                 var newSource = _cellData.DataSource;
-                if (_hookedDataSource == newSource && !forceUpdate)
-                    return;
+                bool sourceChange = _hookedDataSource != newSource;
 
-                if (_hookedDataSource != null)
+                if (sourceChange)
                 {
-                    _hookedDataSource.ItemsChanged -= OnAutomatedDataSourceItemsChanged;
+                    if (_hookedDataSource != null)
+                    {
+                        _hookedDataSource.ItemsChanged -= OnAutomatedDataSourceItemsChanged;
+                        _hookedDataSource.Disable();
+                    }
+
+                    _hookedDataSource = newSource;
+
+                    if (_hookedDataSource != null)
+                    {
+                        _hookedDataSource.Enable();
+                        _hookedDataSource.ItemsChanged += OnAutomatedDataSourceItemsChanged;
+                    }
                 }
 
-                _hookedDataSource = newSource;
-
-                if (_hookedDataSource != null)
+                if ((sourceChange || forceUpdate) && _hookedDataSource != null)
                 {
-                    _hookedDataSource.ItemsChanged += OnAutomatedDataSourceItemsChanged;
                     OnAutomatedDataSourceItemsChanged();
                 }
             }
@@ -103,24 +120,52 @@ namespace UnityX.Bookmarks
             {
                 GlobalObjectId[] newItems = _hookedDataSource.ProvideItems();
 
-                // remove old items
-                for (int i = _cellData.Items.Count - 1; i >= 0; i--)
+                if (_hookedDataSource.ProvidedItemsAreAlreadySorted)
                 {
-                    if (Array.IndexOf(newItems, _cellData.Items[i].GlobalObjectId) == -1)
+                    int i = 0;
+                    for (; i < newItems.Length; i++)
                     {
-                        _cellData.Items.RemoveAt(i);
+                        int existingEntryIndex = _cellData.IndexOfItem(newItems[i]);
+
+                        if (existingEntryIndex != -1)
+                        {
+                            _cellData.Items.Swap(i, existingEntryIndex);
+                        }
+                        else
+                        {
+                            _cellData.Items.Insert(i, new BookmarksWindowLocalState.Item()
+                            {
+                                GlobalObjectId = newItems[i]
+                            });
+                        }
+                    }
+
+                    if(newItems.Length < _cellData.Items.Count)
+                    {
+                        _cellData.Items.RemoveRange(newItems.Length, _cellData.Items.Count - newItems.Length);
                     }
                 }
-
-                // add new items
-                foreach (var item in newItems)
+                else
                 {
-                    if (!_cellData.HasItem(item))
+                    // remove old items
+                    for (int i = _cellData.Items.Count - 1; i >= 0; i--)
                     {
-                        _cellData.Items.Add(new BookmarksWindowLocalState.Item()
+                        if (Array.IndexOf(newItems, _cellData.Items[i].GlobalObjectId) == -1)
                         {
-                            GlobalObjectId = item
-                        });
+                            _cellData.Items.RemoveAt(i);
+                        }
+                    }
+
+                    // add new items
+                    foreach (var item in newItems)
+                    {
+                        if (!_cellData.HasItem(item))
+                        {
+                            _cellData.Items.Add(new BookmarksWindowLocalState.Item()
+                            {
+                                GlobalObjectId = item
+                            });
+                        }
                     }
                 }
 
@@ -130,7 +175,7 @@ namespace UnityX.Bookmarks
 
                     // Sort if needed
                     var sortingAlgo = _cellData.SortingAlgorithm;
-                    if (sortingAlgo != null)
+                    if (sortingAlgo != null && !_hookedDataSource.ProvidedItemsAreAlreadySorted)
                     {
                         _cellData.Items.Sort(sortingAlgo);
                     }
@@ -175,15 +220,13 @@ namespace UnityX.Bookmarks
                     if (affectedByChange)
                     {
                         var sortingAlgo = _cellData.SortingAlgorithm;
-                        if (sortingAlgo != null)
+                        if (sortingAlgo != null && _cellData.DataSource?.ProvidedItemsAreAlreadySorted != true)
                         {
                             _cellData.Items.Sort(sortingAlgo);
                             UpdateItemViewList();
                         }
                     }
-
                 }
-
             }
 
             private void OnDragEnter(DragEnterEvent evt)
@@ -304,15 +347,7 @@ namespace UnityX.Bookmarks
 
             private void PopulateOptionsMenu(ContextualMenuPopulateEvent evt)
             {
-                evt.menu.AppendAction("Settings", (x) =>
-                {
-                    BookmarkGroupInspectorWindow.Show(this, _resources.Window.position);
-                });
-
-                evt.menu.AppendSeparator();
-
-
-                if (_cellData.SortingAlgorithm == null)
+                if (_cellData.SortingAlgorithm == null && _cellData.DataSource?.ProvidedItemsAreAlreadySorted != true)
                 {
                     foreach (var sortAlgo in Bookmarks.SortMenuAlgorithms)
                     {
@@ -332,11 +367,6 @@ namespace UnityX.Bookmarks
                 {
                     evt.menu.AppendAction($"Sort (Already Automated)", null, DropdownMenuAction.Status.Disabled);
                 }
-
-                evt.menu.AppendAction("Rename", (x) =>
-                {
-                    StartRename();
-                });
 
                 evt.menu.AppendAction("Add Current Selection To Group", (x) =>
                 {
@@ -401,7 +431,7 @@ namespace UnityX.Bookmarks
                     return false;
 
                 // If we're dragging a child and we have an automated sorting, refuse
-                if (draggedCellSource == this && _cellData.SortingAlgorithm != null)
+                if (draggedCellSource == this && (_cellData.SortingAlgorithm != null || _cellData.DataSource?.ProvidedItemsAreAlreadySorted == true))
                     return false;
 
                 // If we're dragging from another source and we have an automated source, refuse
@@ -507,7 +537,8 @@ namespace UnityX.Bookmarks
 
             private void OnOptionsButtonClicked(EventBase evt)
             {
-                _optionsButton.panel.contextualMenuManager.DisplayMenu(evt, _optionsButton);
+                BookmarkGroupInspectorWindow.Show(this, _resources.Window.position);
+                //_optionsButton.panel.contextualMenuManager.DisplayMenu(evt, _optionsButton);
             }
 
             private int FindInsertIndexFromLocalMousePosition(Vector2 localMousePos)

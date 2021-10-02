@@ -12,27 +12,30 @@ namespace UnityX.Bookmarks
         {
             var window = GetWindow<BookmarkGroupInspectorWindow>(true, "Group Settings", true);
 
-            Vector2 size = new Vector2(350, 200);
-            Vector2 pos = instigatorWindowRect.min + Vector2.right * (instigatorWindowRect.width - 100f);
+            //Vector2 size = new Vector2(350, 200);
+            //Vector2 pos = instigatorWindowRect.min + Vector2.right * (instigatorWindowRect.width - 100f);
 
-            window.position = new Rect(pos, size);
+            //window.position = new Rect(pos, size);
             window.Init(cellView);
             window.Show();
         }
 
         internal static void Hide()
         {
-            s_openedWindow?.Close();
+            if (s_openedWindow != null)
+                s_openedWindow._closeInNextUpdate = true;
         }
 
         private static readonly string s_windowUXML = "d7f89dbb03f79274394619184b723bc3";
-        private static BookmarkGroupInspectorWindow s_openedWindow;
+        private static BookmarkGroupInspectorWindow s_openedWindow = null;
         private BookmarksWindow.CellView _cellView;
+        private bool _closeInNextUpdate = false;
         private string _cellPath;
         private SerializedObject _serializedObject;
         private PropertyContainer _container;
         private SerializedProperty _useCustomColorProperty;
         private PropertyField _customColorView;
+        private PropertyField _sortingAlgoView;
 
         private void OnEnable()
         {
@@ -42,6 +45,12 @@ namespace UnityX.Bookmarks
         private void OnDisable()
         {
             s_openedWindow = null;
+        }
+
+        private void OnGUI()
+        {
+            if (_closeInNextUpdate || focusedWindow != this)
+                Close();
         }
 
         public class PropertyContainer : ScrollView
@@ -82,7 +91,7 @@ namespace UnityX.Bookmarks
 
             RegisterProperty("name", nameof(BookmarksWindowLocalState.Cell.Name));
             RegisterProperty("data-source", nameof(BookmarksWindowLocalState.Cell.DataSource));
-            RegisterProperty("sort-algo", nameof(BookmarksWindowLocalState.Cell.SortingAlgorithm));
+            RegisterProperty("sort-algo", nameof(BookmarksWindowLocalState.Cell.SortingAlgorithm), out _sortingAlgoView, out _);
             RegisterProperty("remove-missing-refs", nameof(BookmarksWindowLocalState.Cell.RemoveMissingReferences));
             RegisterProperty("custom-color", nameof(BookmarksWindowLocalState.Cell.UseCustomColor), out _, out _useCustomColorProperty);
             RegisterProperty("custom-color-value", nameof(BookmarksWindowLocalState.Cell.Color), out _customColorView, out SerializedProperty _);
@@ -109,7 +118,8 @@ namespace UnityX.Bookmarks
 
         private void OnPropertyChange(SerializedPropertyChangeEvent evt)
         {
-            _customColorView.visible = _useCustomColorProperty.boolValue;
+            _customColorView.style.display = new StyleEnum<DisplayStyle>(_useCustomColorProperty.boolValue ? DisplayStyle.Flex : DisplayStyle.None);
+            _sortingAlgoView.style.display = new StyleEnum<DisplayStyle>(_cellView.CellData.DataSource?.ProvidedItemsAreAlreadySorted != true ? DisplayStyle.Flex : DisplayStyle.None);
             _cellView.OnSettingsModified();
         }
 

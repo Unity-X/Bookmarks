@@ -298,6 +298,18 @@ namespace UnityX.Bookmarks
 
         public List<CellGroup> CellGroups = new List<CellGroup>();
 
+        private void OnEnable()
+        {
+            foreach (var group in CellGroups)
+            {
+                foreach (var cell in group.Cells)
+                {
+                    cell.DataSource?.Enable();
+                    cell.SortingAlgorithm?.Enable();
+                }
+            }
+        }
+
         public void BeginUndoableChange()
         {
             Undo.RecordObject(this, "Shelf Window Change");
@@ -317,6 +329,15 @@ namespace UnityX.Bookmarks
         private void OnDisable()
         {
             Save(true);
+
+            foreach (var group in CellGroups)
+            {
+                foreach (var cell in group.Cells)
+                {
+                    cell.DataSource?.Disable();
+                    cell.SortingAlgorithm?.Disable();
+                }
+            }
         }
     }
 }

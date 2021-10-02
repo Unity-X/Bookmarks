@@ -32,6 +32,16 @@ namespace UnityX.Bookmarks
             return new Rect(relativeMin - bRect.min, relativeSize);
         }
 
+        public static void Swap<T>(this List<T> list, int indexA, int indexB)
+        {
+            if (indexA == indexB)
+                return;
+
+            var temp = list[indexA];
+            list[indexA] = list[indexB];
+            list[indexB] = temp;
+        }
+
         public static void Move<T>(this List<T> list, int oldIndex, int newIndex)
         {
             var item = list[oldIndex];
