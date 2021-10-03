@@ -115,7 +115,6 @@ namespace UnityX.Bookmarks
             }
 
             root.Q("group-container").Add(groupGroup);
-            root.Q<Button>("reloadButton").clicked += ReloadWindow;
             root.Q<Button>("add-group-button").clicked += AddGroupToData;
         }
 
