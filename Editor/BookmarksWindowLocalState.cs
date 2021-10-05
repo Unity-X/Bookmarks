@@ -34,7 +34,6 @@ namespace UnityX.Bookmarks
             [SerializeReference, SubclassSelector] public BookmarkSortingAlgorithm SortingAlgorithm = null;
             public List<Item> Items;
             public bool FoldoutOpened;
-            public bool RemoveMissingReferences;
             public int SortByType; // 1 ascendant, -1 descendant, 0 none
             public int SortByName; // 1 ascendant, -1 descendant, 0 none
             public bool UseCustomColor;
