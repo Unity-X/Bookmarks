@@ -75,7 +75,6 @@ namespace UnityX.Bookmarks
             RegisterProperty("name", nameof(BookmarksWindowLocalState.Cell.Name));
             RegisterProperty("data-source", nameof(BookmarksWindowLocalState.Cell.DataSource));
             RegisterProperty("sort-algo", nameof(BookmarksWindowLocalState.Cell.SortingAlgorithm), out _sortingAlgoView, out _);
-            RegisterProperty("remove-missing-refs", nameof(BookmarksWindowLocalState.Cell.RemoveMissingReferences));
             RegisterProperty("custom-color", nameof(BookmarksWindowLocalState.Cell.UseCustomColor), out _, out _useCustomColorProperty);
             RegisterProperty("custom-color-value", nameof(BookmarksWindowLocalState.Cell.Color), out _customColorView, out SerializedProperty _);
 
