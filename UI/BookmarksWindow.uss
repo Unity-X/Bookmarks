@@ -107,5 +107,5 @@
 }
 
 #options-button {
-    -unity-background-image-tint-color: var(--unity-colors-default-text); /*rgba(101, 101, 101, 255);*/
+    -unity-background-image-tint-color: var(--unity-colors-default-text);
 }
