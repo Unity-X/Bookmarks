@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityX.Bookmarks
@@ -23,6 +24,8 @@ namespace UnityX.Bookmarks
 
                 var scrollView = new ScrollView(ScrollViewMode.Vertical);
                 scrollView.style.flexGrow = 1;
+                scrollView.verticalScroller.value = cellGroupData.ScrollPosition;
+                scrollView.verticalScroller.valueChanged += OnScrollBarValueChanged;
 
                 var addCellButton = CreateAddButton();
                 addCellButton.clicked += AddCellToData;
@@ -36,6 +39,11 @@ namespace UnityX.Bookmarks
                     _cellViews.Add(cellView);
                     scrollView.Add(cellView);
                 }
+            }
+
+            private void OnScrollBarValueChanged(float scrollPosition)
+            {
+                _cellGroupData.ScrollPosition = scrollPosition;
             }
 
             private void AddCellToData()

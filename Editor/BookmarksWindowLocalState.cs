@@ -12,6 +12,7 @@ namespace UnityX.Bookmarks
         public class CellGroup
         {
             public float LayoutWeight;
+            public float ScrollPosition;
             public List<Cell> Cells;
 
             public static CellGroup CreateDefault()
