@@ -100,6 +100,8 @@ namespace UnityX.Bookmarks
             private void OnSelectionChanged()
             {
                 int[] selectedInstanceIds = Selection.instanceIDs;
+                if (selectedInstanceIds.Length < 0)
+                    return;
                 GlobalObjectId[] selectedGlobalIds = new GlobalObjectId[selectedInstanceIds.Length];
                 GlobalObjectId.GetGlobalObjectIdsSlow(selectedInstanceIds, selectedGlobalIds);
 
