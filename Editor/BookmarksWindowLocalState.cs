@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace UnityX.Bookmarks
 {
-    [FilePath("Library/ShelfTool/ShelfWindowLocalState.txt", FilePathAttribute.Location.ProjectFolder)]
+    [FilePath("UserSettings/Bookmarks/BookmarksWindowLocalState.txt", FilePathAttribute.Location.ProjectFolder)]
     public class BookmarksWindowLocalState : ScriptableSingleton<BookmarksWindowLocalState>
     {
         [Serializable]
@@ -308,6 +308,8 @@ namespace UnityX.Bookmarks
                     cell.SortingAlgorithm?.Enable();
                 }
             }
+
+            hideFlags = HideFlags.None;
         }
 
         public void BeginUndoableChange()
