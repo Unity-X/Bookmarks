@@ -28,6 +28,7 @@ namespace UnityX.Bookmarks
 
         private static readonly string s_windowUXML = "d7f89dbb03f79274394619184b723bc3";
         private static BookmarkGroupInspectorWindow s_openedWindow = null;
+        private BookmarksWindowLocalState _editedObject;
         private BookmarksWindow.CellView _cellView;
         private bool _closeInNextUpdate = false;
         private string _cellPath;
@@ -55,9 +56,11 @@ namespace UnityX.Bookmarks
 
         private void Init(BookmarksWindow.CellView cellView)
         {
+            _editedObject = BookmarksWindowLocalState.instance;
+
             _cellView = cellView;
             _cellPath = GetCellPropertyPath(cellView);
-            _serializedObject = new SerializedObject(BookmarksWindowLocalState.instance);
+            _serializedObject = new SerializedObject(_editedObject);
 
             rootVisualElement.Clear();
             _container = new ScrollView(ScrollViewMode.Vertical);
@@ -79,7 +82,7 @@ namespace UnityX.Bookmarks
             RegisterProperty("custom-color-value", nameof(BookmarksWindowLocalState.Cell.Color), out _customColorView, out SerializedProperty _);
 
             _container.Bind(_serializedObject);
-            _container.RegisterCallback<SerializedPropertyChangeEvent>((evt)=>OnPropertyChange());
+            _container.RegisterCallback<SerializedPropertyChangeEvent>((evt) => OnPropertyChange());
             OnPropertyChange();
 
             foreach (var item in _container.Children())
@@ -91,6 +94,7 @@ namespace UnityX.Bookmarks
         private void RegisterProperty(string viewName, string propName, out PropertyField view, out SerializedProperty property)
         {
             view = _container.Q<PropertyField>(viewName);
+            Debug.Log($"EnabledSelf:{view.enabledSelf} in hierarchy:{view.enabledInHierarchy}");
             string path = $"{_cellPath}.{propName}";
             view.bindingPath = path;
             property = _serializedObject.FindProperty(path);
@@ -108,13 +112,13 @@ namespace UnityX.Bookmarks
         private string GetCellPropertyPath(BookmarksWindow.CellView cellView)
         {
             var cellData = cellView.CellData;
-            var groupIndex = BookmarksWindowLocalState.instance.CellGroups.FindIndex((g) => g.Cells.Contains(cellData));
+            var groupIndex = _editedObject.CellGroups.FindIndex((g) => g.Cells.Contains(cellData));
             if (groupIndex == -1)
             {
                 return string.Empty;
             }
 
-            var cellIndex = BookmarksWindowLocalState.instance.CellGroups[groupIndex].Cells.IndexOf(cellData);
+            var cellIndex = _editedObject.CellGroups[groupIndex].Cells.IndexOf(cellData);
             return $"{nameof(BookmarksWindowLocalState.CellGroups)}.Array.data[{groupIndex}].{nameof(BookmarksWindowLocalState.CellGroup.Cells)}.Array.data[{cellIndex}]";
         }
     }

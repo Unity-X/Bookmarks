@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace UnityX.Bookmarks
 {
-    [FilePath("Library/ShelfTool/ShelfWindowLocalState.txt", FilePathAttribute.Location.ProjectFolder)]
+    [FilePath("UserSettings/Bookmarks/BookmarksWindowLocalState.txt", FilePathAttribute.Location.ProjectFolder)]
     public class BookmarksWindowLocalState : ScriptableSingleton<BookmarksWindowLocalState>
     {
         [Serializable]
