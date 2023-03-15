@@ -73,7 +73,13 @@ namespace UnityX.Bookmarks
         public class RecentSelections : BookmarkDataSource
         {
             [SerializeField] private int _capacity = 10;
-            [SerializeField, HideInInspector] private List<string> _savedSelections = new List<string>();
+            [SerializeField, HideInInspector] private SavedSelections _savedSelections = new SavedSelections();
+
+            [Serializable]
+            private class SavedSelections
+            {
+                [SerializeField] public List<string> Value = new List<string>();
+            }
 
             private List<GlobalObjectId> _selections = new List<GlobalObjectId>();
 
@@ -85,7 +91,7 @@ namespace UnityX.Bookmarks
                 Selection.selectionChanged += OnSelectionChanged;
 
                 _selections.Clear();
-                foreach (var item in _savedSelections)
+                foreach (var item in _savedSelections.Value)
                 {
                     if (GlobalObjectId.TryParse(item, out GlobalObjectId id))
                         _selections.Add(id);
@@ -126,10 +132,10 @@ namespace UnityX.Bookmarks
                     _selections.RemoveRange(_capacity, _selections.Count - _capacity);
                 }
 
-                _savedSelections.Clear();
+                _savedSelections.Value.Clear();
                 foreach (var item in _selections)
                 {
-                    _savedSelections.Add(item.ToString());
+                    _savedSelections.Value.Add(item.ToString());
                 }
 
                 NotifyItemsChanged();

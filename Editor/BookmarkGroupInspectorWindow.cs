@@ -94,7 +94,6 @@ namespace UnityX.Bookmarks
         private void RegisterProperty(string viewName, string propName, out PropertyField view, out SerializedProperty property)
         {
             view = _container.Q<PropertyField>(viewName);
-            Debug.Log($"EnabledSelf:{view.enabledSelf} in hierarchy:{view.enabledInHierarchy}");
             string path = $"{_cellPath}.{propName}";
             view.bindingPath = path;
             property = _serializedObject.FindProperty(path);
