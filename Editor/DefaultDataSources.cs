@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 
@@ -13,6 +14,7 @@ namespace UnityX.Bookmarks
         {
             [SerializeField] private string _folder = "Assets/Scenes";
             [SerializeField] private bool _includeSubfolders = true;
+            [SerializeField] private string _nameRegexFilter = "";
 
             public override string MenuName => "Folder View";
             public override bool ProvidedItemsAreAlreadySorted => false;
@@ -32,6 +34,13 @@ namespace UnityX.Bookmarks
 
                     if (!_includeSubfolders && path.IndexOf('/', _folder.Length + 1) != -1)
                         continue;
+
+                    if (!string.IsNullOrEmpty(_nameRegexFilter))
+                    {
+                        string fileName = Path.GetFileNameWithoutExtension(path);
+                        if (!Regex.IsMatch(fileName, _nameRegexFilter))
+                            continue;
+                    }
 
                     var obj = AssetDatabase.LoadMainAssetAtPath(path);
                     if (obj != null)
