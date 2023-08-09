@@ -55,8 +55,11 @@ namespace UnityX.Bookmarks
         {
             s_activeInstance = this;
             _resources.Window = this;
-            ReloadWindow();
+        }
 
+        private void CreateGUI()
+        {
+            ReloadWindow();
             rootVisualElement.RegisterCallback<DragExitedEvent>(OnDragExit);
         }
 
