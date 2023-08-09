@@ -309,7 +309,7 @@ namespace UnityX.Bookmarks
                 }
             }
 
-            hideFlags = HideFlags.None;
+            hideFlags = HideFlags.HideAndDontSave ^ ~HideFlags.DontSaveInEditor;
         }
 
         public void BeginUndoableChange()
