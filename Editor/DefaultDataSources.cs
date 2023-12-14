@@ -73,6 +73,8 @@ namespace UnityX.Bookmarks
         public class RecentSelections : BookmarkDataSource
         {
             [SerializeField] private int _capacity = 10;
+            [SerializeField] private bool _ignoreSceneSelections = false;
+            [SerializeField] private bool _ignoreFolders = false;
             [SerializeField, HideInInspector] private SavedSelections _savedSelections = new SavedSelections();
 
             [Serializable]
@@ -108,12 +110,21 @@ namespace UnityX.Bookmarks
                 int[] selectedInstanceIds = Selection.instanceIDs;
                 if (selectedInstanceIds.Length < 0)
                     return;
+
                 GlobalObjectId[] selectedGlobalIds = new GlobalObjectId[selectedInstanceIds.Length];
                 GlobalObjectId.GetGlobalObjectIdsSlow(selectedInstanceIds, selectedGlobalIds);
 
-                foreach (var globalId in selectedGlobalIds)
+                object[] selectedInstances = Selection.objects;
+                for (int i = 0; i < selectedGlobalIds.Length; i++)
                 {
+                    if (_ignoreSceneSelections && (selectedInstances[i] is GameObject go) && go.scene.IsValid())
+                        continue;
+
+                    var globalId = selectedGlobalIds[i];
                     if (globalId.assetGUID.Empty())
+                        continue;
+
+                    if(_ignoreFolders && AssetDatabase.IsValidFolder(AssetDatabase.GUIDToAssetPath(globalId.assetGUID)))
                         continue;
 
                     int index = _selections.IndexOf(globalId);
