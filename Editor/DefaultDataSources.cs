@@ -107,14 +107,19 @@ namespace UnityX.Bookmarks
 
             private void OnSelectionChanged()
             {
-                int[] selectedInstanceIds = Selection.instanceIDs;
-                if (selectedInstanceIds.Length < 0)
+                UnityEngine.Object[] selectedInstances = Selection.objects;
+                if (selectedInstances.Length < 0)
                     return;
+
+                int[] selectedInstanceIds = new int[selectedInstances.Length];
+                for (int i = 0; i < selectedInstanceIds.Length; i++)
+                {
+                    selectedInstanceIds[i] = selectedInstances[i].GetInstanceID();
+                }
 
                 GlobalObjectId[] selectedGlobalIds = new GlobalObjectId[selectedInstanceIds.Length];
                 GlobalObjectId.GetGlobalObjectIdsSlow(selectedInstanceIds, selectedGlobalIds);
 
-                object[] selectedInstances = Selection.objects;
                 for (int i = 0; i < selectedGlobalIds.Length; i++)
                 {
                     if (_ignoreSceneSelections && (selectedInstances[i] is GameObject go) && go.scene.IsValid())
